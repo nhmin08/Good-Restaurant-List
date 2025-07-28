@@ -1,0 +1,5 @@
+package com.good.restaurant.good_restaurant_list
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
