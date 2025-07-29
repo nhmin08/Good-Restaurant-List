@@ -1,4 +1,3 @@
-import 'package:good_restaurant_list/core/util/logger.dart';
 import 'package:good_restaurant_list/domain/entity/restaurant_list/restaurant_data_entity.dart';
 import 'package:good_restaurant_list/domain/entity/restaurant_list/restaurant_list_response_entity.dart';
 import 'package:good_restaurant_list/domain/use_case/restaurant_list_usecase.dart';
@@ -13,11 +12,11 @@ class RestaurantList extends _$RestaurantList {
     return const AsyncLoading();
   }
 
-  /// 페이지 진입 시 식당 정보를 불러옴
-  Future<void> fetchRestaurantData({
+  Future<bool> pagination({
     RestaurantListUseCase? restaurantListUseCase, //test code 용
     required int page,
     required String serviceKey,
+    required bool fetchMore,
   }) async {
     final RestaurantListUseCase useCase =
         restaurantListUseCase ?? ref.read(restaurantListUseCaseStateProvider);
@@ -26,41 +25,31 @@ class RestaurantList extends _$RestaurantList {
       final RestaurantListResponseEntity response = await useCase
           .fetchRestaurantData(page: page, serviceKey: serviceKey);
 
-      state = AsyncData(response.data);
-    } catch (e) {
-      rethrow;
-    }
-  }
+      if (fetchMore) {
+        // 데이터 추가
+        // final List<RestaurantDataEntity> currentList = List.from(state.value!)
+        //   ..addAll(response.data);
 
-  /// 식당 정보를 추가로 가져옴
-  Future<void> getMoreRestaurantData({
-    RestaurantListUseCase? restaurantListUseCase, //test code 용
-    required int page,
-    required String serviceKey,
-  }) async {
-    final RestaurantListUseCase useCase =
-        restaurantListUseCase ?? ref.read(restaurantListUseCaseStateProvider);
+        // state = AsyncData(currentList);
 
-    try {
-      final RestaurantListResponseEntity response = await useCase
-          .fetchRestaurantData(page: page, serviceKey: serviceKey);
-
-      if (response.data == []) {
-        return;
+        state = AsyncData(
+          response.copyWith(data: [...state.value!, ...response.data]).data,
+        );
+      } else {
+        // 데이터 새로 불러오기 or refresh
+        state = AsyncData(response.data);
       }
 
-      final List<RestaurantDataEntity> currentList = List.from(state.value!)
-        ..addAll(response.data);
-
-      state = AsyncData(currentList);
+      if (response.data == [] || response.data.isEmpty) {
+        return false;
+      }
+      return true;
     } catch (e) {
       rethrow;
     }
   }
 
   List<RestaurantDataEntity> getRestaurantListData() {
-    //if (state.asData == null) return;
-
     final List<RestaurantDataEntity> data = state.asData!.value;
 
     return data;
